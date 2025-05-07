@@ -3,7 +3,7 @@ FROM python:3.11-slim
 WORKDIR /app
 COPY . .
 
-RUN pip install --upgrade pip \
- && pip install -r requirements.txt
+RUN pip install --upgrade pip && \
+    pip install -r requirements.txt
 
-CMD ["bash"]    # conteneur démarre sur un shell
+CMD ["bash"]                     # conteneur démarre sur un shell
