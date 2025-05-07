@@ -1,6 +1,6 @@
 import argparse, os, sys
-import mlflow, mlflow.sklearn
 import pandas as pd, numpy as np
+import mlflow, mlflow.sklearn
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import ElasticNet, Ridge, Lasso
 from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
@@ -10,7 +10,7 @@ cli = argparse.ArgumentParser()
 cli.add_argument("--model",    required=True,
                  choices=["elasticnet", "ridge", "lasso"])
 cli.add_argument("--alpha",    type=float, default=0.5)
-cli.add_argument("--l1_ratio", type=float, default=0.5)   # ignore par Ridge/Lasso
+cli.add_argument("--l1_ratio", type=float, default=0.5)
 args = cli.parse_args()
 
 # ---------- 2. MLflow ----------
@@ -21,8 +21,8 @@ mlflow.set_experiment(f"mlops_redwine_{args.model}")
 # ---------- 3. Données ----------
 csv_path = "data/red-wine-quality.csv"
 if not os.path.exists(csv_path):
-    sys.exit(f"❌ Fichier introuvable : {csv_path}")
-df = pd.read_csv(csv_path)
+    sys.exit(f"Fichier introuvable : {csv_path}")
+df = pd.read_csv(csv_path, sep=';')        # <‑‑ séparateur correct
 
 X = df.drop("quality", axis=1)
 y = df["quality"]
@@ -30,7 +30,7 @@ X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=0.25, random_state=42
 )
 
-def metrics(y_true, y_pred):
+def log_metrics(y_true, y_pred):
     return {
         "rmse": np.sqrt(mean_squared_error(y_true, y_pred)),
         "mae":  mean_absolute_error(y_true, y_pred),
@@ -40,9 +40,7 @@ def metrics(y_true, y_pred):
 # ---------- 4. Entraînement ----------
 with mlflow.start_run():
     if args.model == "elasticnet":
-        model = ElasticNet(alpha=args.alpha,
-                           l1_ratio=args.l1_ratio,
-                           random_state=42)
+        model = ElasticNet(alpha=args.alpha, l1_ratio=args.l1_ratio, random_state=42)
         mlflow.log_param("l1_ratio", args.l1_ratio)
     elif args.model == "ridge":
         model = Ridge(alpha=args.alpha, random_state=42)
@@ -53,8 +51,8 @@ with mlflow.start_run():
     model.fit(X_train, y_train)
     preds = model.predict(X_test)
 
-    for k, v in metrics(y_test, preds).items():
+    for k, v in log_metrics(y_test, preds).items():
         mlflow.log_metric(k, float(v))
 
     mlflow.sklearn.log_model(model, "model")
-    print(f"✅ Terminé : {args.model}  alpha={args.alpha}")
+    print(f"Terminé : {args.model}  alpha={args.alpha}")
